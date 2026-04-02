@@ -22,6 +22,10 @@
 #include "latent-preview.h"
 #include "name_conversion.h"
 
+#ifdef GGML_USE_NPU
+#include "ggml/src/ggml-cpu/ggml-cpu-matmul-npu.h"
+#endif
+
 const char* model_version_to_str[] = {
     "SD 1.x",
     "SD 1.x Inpaint",
@@ -165,9 +169,20 @@ public:
             ggml_backend_free(vae_backend);
         }
         ggml_backend_free(backend);
+        #ifdef GGML_USE_NPU
+            // 清理 NPU 资源
+            ggml_npu_free();
+            LOG_DEBUG("NPU backend freed");
+        #endif
     }
 
     void init_backend() {
+#ifdef GGML_USE_NPU
+        // 初始化 NPU（优先级最高，因为是嵌入式设备）
+        LOG_DEBUG("Initializing NPU backend");
+        ggml_npu_init();
+        LOG_INFO("NPU backend initialized");
+#endif
 #ifdef SD_USE_CUDA
         LOG_DEBUG("Using CUDA backend");
         backend = ggml_backend_cuda_init(0);

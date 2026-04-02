@@ -13,3 +13,6 @@ output*.png
 models*
 *.log
 preview.png
+results*/
+inputs*/
+weights*/

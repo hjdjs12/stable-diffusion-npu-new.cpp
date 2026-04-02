@@ -29,10 +29,10 @@ endif()
 # general
 #option(SD_BUILD_TESTS                "sd: build tests"    ${SD_STANDALONE})
 option(SD_BUILD_EXAMPLES             "sd: build examples" ${SD_STANDALONE})
-option(SD_WEBP                       "sd: enable WebP image I/O support" ON)
 option(SD_CUDA                       "sd: cuda backend" OFF)
 option(SD_HIPBLAS                    "sd: rocm backend" OFF)
 option(SD_METAL                      "sd: metal backend" OFF)
+option(SD_NPU                        "sd: npu backend (RK3588)" OFF)
 option(SD_VULKAN                     "sd: vulkan backend" OFF)
 option(SD_OPENCL                     "sd: opencl backend" OFF)
 option(SD_SYCL                       "sd: sycl backend" OFF)
@@ -41,6 +41,12 @@ option(SD_BUILD_SHARED_LIBS          "sd: build shared libs" OFF)
 option(SD_BUILD_SHARED_GGML_LIB      "sd: build ggml as a separate shared lib" OFF)
 option(SD_USE_SYSTEM_GGML            "sd: use system-installed GGML library" OFF)
 #option(SD_BUILD_SERVER               "sd: build server example"                           ON)
+
+if(SD_NPU)
+    message("-- Use NPU as backend stable-diffusion (RK3588)")
+    set(GGML_NPU ON)
+    add_definitions(-DGGML_USE_NPU)
+endif()
 
 if(SD_CUDA)
     message("-- Use CUDA as backend stable-diffusion")
@@ -76,10 +82,6 @@ if(SD_MUSA)
     message("-- Use MUSA as backend stable-diffusion")
     set(GGML_MUSA ON)
     add_definitions(-DSD_USE_CUDA)
-endif()
-
-if(SD_WEBP)
-    add_compile_definitions(SD_USE_WEBP)
 endif()
 
 set(SD_LIB stable-diffusion)
@@ -183,7 +185,16 @@ add_subdirectory(thirdparty)
 
 target_link_libraries(${SD_LIB} PUBLIC ggml zip)
 target_include_directories(${SD_LIB} PUBLIC . include)
-target_include_directories(${SD_LIB} PUBLIC . thirdparty)
+target_include_directories(
+    ${SD_LIB} 
+    PUBLIC 
+    . thirdparty
+    ggml/include
+    ggml/src
+    ggml/rknpu/user-driver/include
+    ggml/rknpu/user-driver/src
+    ggml/rknpu/user-driver
+    )
 target_compile_features(${SD_LIB} PUBLIC c_std_11 cxx_std_17)
 
 
