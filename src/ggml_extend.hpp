@@ -2315,9 +2315,15 @@ protected:
         if (in_features % ggml_blck_size(wtype) != 0 || force_f32) {
             wtype = GGML_TYPE_F32;
         }
+        if(prefix.find("text_encoders.t5xxl") != std::string::npos && prefix.find("relative_attention_bias") == std::string::npos && prefix.find("shared") == std::string::npos){
+            wtype = GGML_TYPE_Q8_0_512;
+        }
         params["weight"] = ggml_new_tensor_2d(ctx, wtype, in_features, out_features);
         if (bias) {
             enum ggml_type wtype = GGML_TYPE_F32;
+            if(prefix.find("text_encoders.t5xxl") != std::string::npos && prefix.find("relative_attention_bias") == std::string::npos && prefix.find("shared") == std::string::npos){
+                wtype = GGML_TYPE_Q8_0_512;
+            }
             params["bias"]       = ggml_new_tensor_1d(ctx, wtype, out_features);
         }
     }
@@ -2370,6 +2376,9 @@ protected:
         if (!support_get_rows(wtype)) {
             wtype = GGML_TYPE_F32;
         }
+        if(prefix.find("text_encoders.t5xxl") != std::string::npos && prefix.find("relative_attention_bias") == std::string::npos && prefix.find("shared") == std::string::npos){
+            wtype = GGML_TYPE_Q8_0_512;
+        }
         params["weight"] = ggml_new_tensor_2d(ctx, wtype, embedding_dim, num_embeddings);
     }
 
@@ -2413,9 +2422,15 @@ protected:
     void init_params(ggml_context* ctx, const String2TensorStorage& tensor_storage_map, const std::string prefix = "") override {
         this->prefix         = prefix;
         enum ggml_type wtype = GGML_TYPE_F16;
+        if(prefix.find("text_encoders.t5xxl") != std::string::npos && prefix.find("relative_attention_bias") == std::string::npos && prefix.find("shared") == std::string::npos){
+            wtype = GGML_TYPE_Q8_0_512;
+        }
         params["weight"]     = ggml_new_tensor_4d(ctx, wtype, kernel_size.second, kernel_size.first, in_channels, out_channels);
         if (bias) {
             enum ggml_type wtype = GGML_TYPE_F32;
+            if(prefix.find("text_encoders.t5xxl") != std::string::npos && prefix.find("relative_attention_bias") == std::string::npos && prefix.find("shared") == std::string::npos){
+                wtype = GGML_TYPE_Q8_0_512;
+            }
             params["bias"]       = ggml_new_tensor_1d(ctx, wtype, out_channels);
         }
     }
@@ -2496,6 +2511,9 @@ protected:
     void init_params(ggml_context* ctx, const String2TensorStorage& tensor_storage_map, const std::string prefix = "") override {
         this->prefix         = prefix;
         enum ggml_type wtype = GGML_TYPE_F16;
+        if(prefix.find("text_encoders.t5xxl") != std::string::npos && prefix.find("relative_attention_bias") == std::string::npos && prefix.find("shared") == std::string::npos){
+            wtype = GGML_TYPE_Q8_0_512;
+        }
         params["weight"]     = ggml_new_tensor_4d(ctx,
                                                   wtype,
                                                   std::get<2>(kernel_size),
@@ -2503,7 +2521,11 @@ protected:
                                                   std::get<0>(kernel_size),
                                                   in_channels * out_channels);
         if (bias) {
-            params["bias"] = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, out_channels);
+            if(prefix.find("text_encoders.t5xxl") != std::string::npos && prefix.find("relative_attention_bias") == std::string::npos && prefix.find("shared") == std::string::npos){
+                params["bias"] = ggml_new_tensor_1d(ctx, GGML_TYPE_Q8_0_512, out_channels);
+            }else{
+                params["bias"] = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, out_channels);
+            }
         }
     }
 
@@ -2557,9 +2579,15 @@ protected:
         this->prefix = prefix;
         if (elementwise_affine) {
             enum ggml_type wtype = GGML_TYPE_F32;
+            if(prefix.find("text_encoders.t5xxl") != std::string::npos && prefix.find("relative_attention_bias") == std::string::npos && prefix.find("shared") == std::string::npos){
+                wtype = GGML_TYPE_Q8_0_512;
+            }
             params["weight"]     = ggml_new_tensor_1d(ctx, wtype, normalized_shape);
             if (bias) {
                 enum ggml_type wtype = GGML_TYPE_F32;
+                if(prefix.find("text_encoders.t5xxl") != std::string::npos && prefix.find("relative_attention_bias") == std::string::npos && prefix.find("shared") == std::string::npos){
+                    wtype = GGML_TYPE_Q8_0_512;
+                }
                 params["bias"]       = ggml_new_tensor_1d(ctx, wtype, normalized_shape);
             }
         }
@@ -2608,6 +2636,10 @@ protected:
         if (affine) {
             enum ggml_type wtype      = GGML_TYPE_F32;
             enum ggml_type bias_wtype = GGML_TYPE_F32;
+            if(prefix.find("text_encoders.t5xxl") != std::string::npos && prefix.find("relative_attention_bias") == std::string::npos && prefix.find("shared") == std::string::npos){
+                wtype = GGML_TYPE_Q8_0_512;
+                bias_wtype = GGML_TYPE_Q8_0_512;
+            }
             params["weight"]          = ggml_new_tensor_1d(ctx, wtype, num_channels);
             params["bias"]            = ggml_new_tensor_1d(ctx, bias_wtype, num_channels);
         }
@@ -2653,6 +2685,9 @@ protected:
     void init_params(ggml_context* ctx, const String2TensorStorage& tensor_storage_map = {}, std::string prefix = "") override {
         this->prefix         = prefix;
         enum ggml_type wtype = GGML_TYPE_F32;
+        if(prefix.find("text_encoders.t5xxl") != std::string::npos && prefix.find("relative_attention_bias") == std::string::npos && prefix.find("shared") == std::string::npos){
+            wtype = GGML_TYPE_Q8_0_512;
+        }
         params["weight"]     = ggml_new_tensor_1d(ctx, wtype, hidden_size);
     }
 

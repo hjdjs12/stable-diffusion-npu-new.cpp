@@ -188,7 +188,7 @@ struct TensorStorage {
     bool is_i64             = false;
     int64_t ne[SD_MAX_DIMS] = {1, 1, 1, 1, 1};
     int n_dims              = 0;
-
+    uint64_t scale_offset_rel;
     size_t file_index = 0;
     int index_in_zip  = -1;  // >= means stored in a zip file
     uint64_t offset   = 0;   // offset in file
@@ -211,6 +211,9 @@ struct TensorStorage {
     }
 
     int64_t nbytes() const {
+        if(type == GGML_TYPE_Q8_0_512){
+            return nelements() + nelements() / 512 * 2;
+        }
         return nelements() * ggml_type_size(type) / ggml_blck_size(type);
     }
 
@@ -308,6 +311,7 @@ protected:
     bool init_from_safetensors_file(const std::string& file_path, const std::string& prefix = "");
     bool init_from_ckpt_file(const std::string& file_path, const std::string& prefix = "");
     bool init_from_diffusers_file(const std::string& file_path, const std::string& prefix = "");
+    bool init_from_bin_file(const std::string& file_path, const std::string& prefix = "");
 
 public:
     bool init_from_file(const std::string& file_path, const std::string& prefix = "");
@@ -327,6 +331,22 @@ public:
                       std::set<std::string> ignore_tensors = {},
                       int n_threads                        = 0,
                       bool use_mmap                        = false);
+    bool load_tensors_from_model(std::map<std::string, ggml_tensor*>& tensors,
+                               std::set<std::string> ignore_tensors,
+                               int n_threads,
+                               bool enable_mmap) ;
+    bool load_tensors_from_encoder(std::map<std::string, ggml_tensor*>& tensors,
+                               std::set<std::string> ignore_tensors,
+                               int n_threads,
+                               bool enable_mmap);
+    bool load_tensors_from_vae(std::map<std::string, ggml_tensor*>& tensors,
+                               std::set<std::string> ignore_tensors,
+                               int n_threads,
+                               bool enable_mmap);
+    bool load_tensors_from_encoder_impl(on_new_tensor_cb_t on_new_tensor_cb, int n_threads_p, bool enable_mmap) ;
+    bool load_tensors_from_model_impl(on_new_tensor_cb_t on_new_tensor_cb, int n_threads_p, bool enable_mmap);
+    bool load_tensors_from_vae_impl(on_new_tensor_cb_t on_new_tensor_cb, int n_threads_p, bool enable_mmap) ;
+
 
     std::vector<std::string> get_tensor_names() const {
         std::vector<std::string> names;

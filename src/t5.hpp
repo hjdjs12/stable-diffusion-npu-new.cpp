@@ -569,7 +569,7 @@ public:
             blocks["relative_attention_bias"] = std::shared_ptr<GGMLBlock>(new Embedding(relative_attention_num_buckets, num_heads));
         }
     }
-
+   
     ggml_tensor* compute_bias(GGMLRunnerContext* ctx,
                               ggml_tensor* relative_position_bucket) {
         auto relative_attention_bias = std::dynamic_pointer_cast<Embedding>(blocks["relative_attention_bias"]);

@@ -26,6 +26,8 @@
 #include "ggml/src/ggml-cpu/ggml-cpu-matmul-npu.h"
 #endif
 
+
+
 const char* model_version_to_str[] = {
     "SD 1.x",
     "SD 1.x Inpaint",
@@ -149,6 +151,9 @@ public:
     bool is_using_v_parameterization     = false;
     bool is_using_edm_v_parameterization = false;
 
+    std::set<std::string> ignore_tensors;
+
+    ModelLoader model_loader;
     std::map<std::string, ggml_tensor*> tensors;
 
     // lora_name => multiplier
@@ -268,7 +273,7 @@ public:
 
         init_backend();
 
-        ModelLoader model_loader;
+
 
         if (strlen(SAFE_STR(sd_ctx_params->model_path)) > 0) {
             LOG_INFO("loading model from '%s'", sd_ctx_params->model_path);
@@ -598,8 +603,8 @@ public:
             cond_stage_model->alloc_params_buffer();
             cond_stage_model->get_param_tensors(tensors);
 
-            diffusion_model->alloc_params_buffer();
-            diffusion_model->get_param_tensors(tensors);
+            // diffusion_model->alloc_params_buffer();
+            // diffusion_model->get_param_tensors(tensors);
 
             if (sd_version_is_unet_edit(version)) {
                 vae_decode_only = false;
@@ -683,8 +688,8 @@ public:
             } else {
                 LOG_INFO("using VAE for encoding / decoding");
                 first_stage_model = create_vae();
-                first_stage_model->alloc_params_buffer();
-                first_stage_model->get_param_tensors(tensors, "first_stage_model");
+                // first_stage_model->alloc_params_buffer();
+                // first_stage_model->get_param_tensors(tensors, "first_stage_model");
                 if (use_tae && tae_preview_only) {
                     LOG_INFO("using TAE for preview");
                     preview_vae = create_tae();
@@ -807,7 +812,7 @@ public:
         // load weights
         LOG_DEBUG("loading weights");
 
-        std::set<std::string> ignore_tensors;
+        
         tensors["alphas_cumprod"] = alphas_cumprod_tensor;
         if (use_tae && !tae_preview_only) {
             ignore_tensors.insert("first_stage_model.");
@@ -834,7 +839,7 @@ public:
         if (version == VERSION_SVD) {
             ignore_tensors.insert("conditioner.embedders.3");
         }
-        bool success = model_loader.load_tensors(tensors, ignore_tensors, n_threads, sd_ctx_params->enable_mmap);
+        bool success = model_loader.load_tensors_from_encoder(tensors, ignore_tensors, n_threads, sd_ctx_params->enable_mmap);
         if (!success) {
             LOG_ERROR("load tensors from model loader failed");
             ggml_free(ctx);
@@ -3437,9 +3442,9 @@ static ImageGenerationEmbeds prepare_video_generation_embeds(sd_ctx_t* sd_ctx,
     int64_t t1 = ggml_time_ms();
     LOG_INFO("get_learned_condition completed, taking %.2fs", (t1 - prepare_start_ms) * 1.0f / 1000);
 
-    if (sd_ctx->sd->free_params_immediately) {
-        sd_ctx->sd->cond_stage_model->free_params_buffer();
-    }
+    // if (sd_ctx->sd->free_params_immediately) {
+    sd_ctx->sd->cond_stage_model->free_params_buffer();
+    // }
     return embeds;
 }
 
@@ -3454,9 +3459,9 @@ static sd_image_t* decode_video_outputs(sd_ctx_t* sd_ctx,
     sd::Tensor<float> vid = sd_ctx->sd->decode_first_stage(final_latent, true);
     int64_t t5            = ggml_time_ms();
     LOG_INFO("decode_first_stage completed, taking %.2fs", (t5 - t4) * 1.0f / 1000);
-    if (sd_ctx->sd->free_params_immediately) {
-        sd_ctx->sd->first_stage_model->free_params_buffer();
-    }
+    // if (sd_ctx->sd->free_params_immediately) {
+    sd_ctx->sd->first_stage_model->free_params_buffer();
+    // }
     if (vid.empty()) {
         LOG_ERROR("decode_first_stage failed for video");
         return nullptr;
@@ -3514,6 +3519,16 @@ SD_API sd_image_t* generate_video(sd_ctx_t* sd_ctx, const sd_vid_gen_params_t* s
 
     sd::Tensor<float> x_t   = latents.init_latent;
     sd::Tensor<float> noise = sd::Tensor<float>::randn_like(x_t, sd_ctx->sd->rng);
+    
+
+    sd_ctx->sd->tensors.clear();
+    sd_ctx->sd->diffusion_model->alloc_params_buffer();
+    sd_ctx->sd->diffusion_model->get_param_tensors(sd_ctx->sd->tensors);
+    bool success = sd_ctx->sd->model_loader.load_tensors_from_model(sd_ctx->sd->tensors, sd_ctx->sd->ignore_tensors, 4, true);
+    if (!success) {
+        LOG_ERROR("load tensors from model loader failed");
+        return nullptr;
+    }
 
     if (plan.high_noise_sample_steps > 0) {
         LOG_DEBUG("sample(high noise) %dx%dx%d", W, H, T);
@@ -3589,9 +3604,9 @@ SD_API sd_image_t* generate_video(sd_ctx_t* sd_ctx, const sd_vid_gen_params_t* s
                                                         request.cache_params);
 
     int64_t sampling_end = ggml_time_ms();
-    if (sd_ctx->sd->free_params_immediately) {
-        sd_ctx->sd->diffusion_model->free_params_buffer();
-    }
+    // if (sd_ctx->sd->free_params_immediately) {
+    sd_ctx->sd->diffusion_model->free_params_buffer();
+    // }
     if (final_latent.empty()) {
         LOG_ERROR("sampling failed after %.2fs", (sampling_end - sampling_start) * 1.0f / 1000);
         return nullptr;
@@ -3605,6 +3620,15 @@ SD_API sd_image_t* generate_video(sd_ctx_t* sd_ctx, const sd_vid_gen_params_t* s
     int64_t latent_end = ggml_time_ms();
     LOG_INFO("generating latent video completed, taking %.2fs", (latent_end - latent_start) * 1.0f / 1000);
 
+    sd_ctx->sd->tensors.clear();
+    sd_ctx->sd->first_stage_model->alloc_params_buffer();
+    sd_ctx->sd->first_stage_model->get_param_tensors(sd_ctx->sd->tensors, "first_stage_model");
+    success = sd_ctx->sd->model_loader.load_tensors_from_vae(sd_ctx->sd->tensors, sd_ctx->sd->ignore_tensors, 4, true);
+    
+    if (!success) {
+        LOG_ERROR("load tensors from model loader failed");
+        return nullptr;
+    }
     auto result = decode_video_outputs(sd_ctx, final_latent, num_frames_out);
     if (result == nullptr) {
         return nullptr;
