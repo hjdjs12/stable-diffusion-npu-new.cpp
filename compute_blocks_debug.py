@@ -8,10 +8,10 @@ import numpy as np
 # ============================================================================
 # 配置参数（与 C++ 代码保持一致）
 # ============================================================================
-N = 512  # input rows (batch size)
+N = 2400  # input rows (batch size)
 M = 1536  # weight rows (output dimension)
 K = 1536  # shared dimension
-BLOCK_N_FP16 = 348
+BLOCK_N_FP16 = 256
 BLOCK_WEIGHT_FP16 = 2048
 BLOCK_SHARED_FP16 = 512
 
@@ -89,11 +89,11 @@ def load_data(filepath, num_elements):
     
     return np.array(values, dtype=np.float32)
 
-print("加载权重 (weights/443.txt)...")
-weight = load_data("weights/443.txt", M * K)
+print("加载权重 (weights/437.txt)...")
+weight = load_data("weights/437.txt", M * K)
 
-print("加载输入 (inputs/443.txt)...")
-input_data = load_data("inputs/443.txt", N * K)
+print("加载输入 (inputs/437.txt)...")
+input_data = load_data("inputs/437.txt", N * K)
 
 if weight is None or input_data is None:
     print("ERROR: 数据加载失败")

@@ -40,7 +40,7 @@ def compare_dirs(dir1, dir2):
     
     common_files = sorted(list(files1.intersection(files2)), key=lambda x: int(x.split('.')[0]) if x.split('.')[0].isdigit() else x)
     # common_files = [f for f in common_files if f in only_check]
-    common_files = common_files[440:]  # 只比较第 75-125 个文件
+    common_files = common_files[436:]  # 只比较第 75-125 个文件
     print(f"{'File':<15} | {'Cosine Sim':<12} | {'MSE':<12} | {'Max Diff':<12}")
     print("-" * 60)
 
@@ -49,8 +49,8 @@ def compare_dirs(dir1, dir2):
         path2 = os.path.join(dir2, f)
 
         data1 = load_tensor(path1)
-        data2 = load_tensor(path2)
-        # data2 = load_tensor_float(path2)  # 第二个目录的文件是标准十进制浮点数格式
+        # data2 = load_tensor(path2)
+        data2 = load_tensor_float(path2)  # 第二个目录的文件是标准十进制浮点数格式
 
         if data1 is None or data2 is None:
             continue
