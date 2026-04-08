@@ -15,6 +15,22 @@ def load_tensor(file_path):
         print(f"Error loading {file_path}: {e}")
         return None
 
+def load_tensor_float(file_path):
+    """读取 txt 文件中的标准十进制浮点数"""
+    try:
+        values = []
+        with open(file_path, "r", encoding="utf-8") as f:
+            for line in f:
+                # split() 会自动处理空格、制表符 \t 和换行符 \n
+                tokens = line.split()
+                # 直接使用 float() 转换标准十进制字符串
+                values.extend(float(token) for token in tokens)
+        
+        return np.array(values, dtype=np.float64)
+    except Exception as e:
+        print(f"Error loading {file_path}: {e}")
+        return None
+
 def compare_dirs(dir1, dir2):
     # 获取两个目录的交集文件名并排序
     files1 = set(os.listdir(dir1))
@@ -24,7 +40,7 @@ def compare_dirs(dir1, dir2):
     
     common_files = sorted(list(files1.intersection(files2)), key=lambda x: int(x.split('.')[0]) if x.split('.')[0].isdigit() else x)
     # common_files = [f for f in common_files if f in only_check]
-    common_files = common_files[433:]  # 只比较第 75-125 个文件
+    common_files = common_files[440:]  # 只比较第 75-125 个文件
     print(f"{'File':<15} | {'Cosine Sim':<12} | {'MSE':<12} | {'Max Diff':<12}")
     print("-" * 60)
 
@@ -34,6 +50,7 @@ def compare_dirs(dir1, dir2):
 
         data1 = load_tensor(path1)
         data2 = load_tensor(path2)
+        # data2 = load_tensor_float(path2)  # 第二个目录的文件是标准十进制浮点数格式
 
         if data1 is None or data2 is None:
             continue
@@ -69,11 +86,11 @@ def compare_dirs(dir1, dir2):
 
 if __name__ == "__main__":
     # 修改为你实际的目录名
-    # dir_cpu = "/mnt/nvme/stable-diffusion.cpp/results"
-    # dir_npu = "/mnt/nvme/stable-diffusion-new2.cpp/results"
+    dir_cpu = "/mnt/nvme/stable-diffusion.cpp/results"
+    dir_npu = "/mnt/nvme/stable-diffusion-new2.cpp/results"
     # "/mnt/nvme/stable-diffusion-new2.cpp/results"
-    dir_cpu = "/mnt/nvme/stable-diffusion-new2.cpp/inputs"
-    dir_npu = "/mnt/nvme/stable-diffusion.cpp/inputs"
+    # dir_cpu = "/mnt/nvme/stable-diffusion-new2.cpp/inputs"
+    # dir_npu = "/mnt/nvme/stable-diffusion.cpp/inputs"
     # dir_cpu = "/mnt/nvme/stable-diffusion-new.cpp/quant"
     # dir_npu = "/mnt/nvme/stable-diffusion.cpp/quant"
     if os.path.exists(dir_cpu) and os.path.exists(dir_npu):
