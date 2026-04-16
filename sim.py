@@ -40,7 +40,7 @@ def compare_dirs(dir1, dir2):
     
     common_files = sorted(list(files1.intersection(files2)), key=lambda x: int(x.split('.')[0]) if x.split('.')[0].isdigit() else x)
     # common_files = [f for f in common_files if f in only_check]
-    common_files = common_files[433:]  # 只比较第 75-125 个文件
+    # common_files = common_files[433:]  # 只比较第 75-125 个文件
     print(f"{'File':<15} | {'Cosine Sim':<12} | {'MSE':<12} | {'Max Diff':<12}")
     print("-" * 60)
 
