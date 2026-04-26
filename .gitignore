@@ -16,3 +16,6 @@ preview.png
 results*/
 inputs*/
 weights*/
+output*/
+*.txt
+*.avi
